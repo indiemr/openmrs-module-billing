@@ -71,6 +71,7 @@ public class BillResource extends BaseRestDataResource<Bill> {
             description.addProperty("patient", Representation.REF);
             description.addProperty("payments", Representation.FULL);
             description.addProperty("receiptNumber");
+            description.addProperty("forceNewBill");
             description.addProperty("status");
             description.addProperty("adjustmentReason");
             description.addProperty("id");
@@ -128,6 +129,11 @@ public class BillResource extends BaseRestDataResource<Bill> {
         if (instance.getBillAdjusted().getUuid() != null) {
             instance.getBillAdjusted().setAdjustmentReason(adjustReason);
         }
+    }
+
+    @PropertySetter("forceNewBill")
+    public void setForceNewBill(Bill instance, Boolean forceNewBill) {
+        instance.setForceNewBill(forceNewBill != null ? forceNewBill : false);
     }
 
     @Override

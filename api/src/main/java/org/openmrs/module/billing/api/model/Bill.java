@@ -60,6 +60,8 @@ public class Bill extends BaseOpenmrsData {
 	
 	private String adjustmentReason;
 	
+	private Boolean forceNewBill = false;
+	
 	public String getAdjustmentReason() {
 		return adjustmentReason;
 	}
@@ -242,6 +244,14 @@ public class Bill extends BaseOpenmrsData {
 	
 	public void setPayments(Set<Payment> payments) {
 		this.payments = payments;
+	}
+	
+	public Boolean getForceNewBill() {
+		return forceNewBill;
+	}
+	
+	public void setForceNewBill(Boolean forceNewBill) {
+		this.forceNewBill = forceNewBill;
 	}
 	
 	public Payment addPayment(PaymentMode mode, Set<PaymentAttribute> attributes, BigDecimal amount,
