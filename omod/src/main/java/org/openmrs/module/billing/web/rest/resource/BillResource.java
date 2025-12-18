@@ -54,6 +54,8 @@ import org.openmrs.module.webservices.rest.web.representation.FullRepresentation
 import org.openmrs.module.webservices.rest.web.representation.Representation;
 import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClientException;
 
 /**
@@ -91,9 +93,9 @@ public class BillResource extends BaseRestDataResource<Bill> {
 
     @PropertySetter("lineItems")
     public void setBillLineItems(Bill instance, List<BillLineItem> lineItems) {
-        if (!instance.isPending()) {
+        if (!instance.editable()) {
             throw new IllegalStateException(
-                    "Line items can only be modified when the bill is in PENDING state. Current status: "
+                    "Line items can only be modified when the bill is in PENDING or POSTED state. Current status: "
                             + instance.getStatus());
         }
         if (instance.getLineItems() == null) {
