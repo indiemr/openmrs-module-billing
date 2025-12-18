@@ -146,13 +146,13 @@ public class BillLineItemServiceImplTest extends BaseModuleContextSensitiveTest 
 		
 		// Get a line item from the posted bill
 		BillLineItem lineItem = postedBill.getLineItems().get(0);
-        assertNotNull(lineItem);
-        assertFalse(lineItem.getVoided());
-
-        // Should not throw exception
-        BillLineItem voidedItem = billLineItemService.voidEntity(lineItem, "Test void reason");
-        assertNotNull(voidedItem);
-        assertTrue(voidedItem.getVoided());
+		assertNotNull(lineItem);
+		assertFalse(lineItem.getVoided());
+		
+		// Should not throw exception
+		BillLineItem voidedItem = billLineItemService.voidEntity(lineItem, "Test void reason");
+		assertNotNull(voidedItem);
+		assertTrue(voidedItem.getVoided());
 	}
 	
 	/**
