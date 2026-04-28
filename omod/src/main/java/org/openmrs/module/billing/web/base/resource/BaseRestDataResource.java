@@ -180,7 +180,7 @@ public abstract class BaseRestDataResource<E extends OpenmrsData> extends DataDe
     }
 
     @Override
-    protected NeedsPaging<E> doGetAll(RequestContext context) {
+    protected org.openmrs.module.webservices.rest.web.resource.api.PageableResult doGetAll(RequestContext context) {
         return new NeedsPaging<E>(getService().getAll(), context);
     }
 
