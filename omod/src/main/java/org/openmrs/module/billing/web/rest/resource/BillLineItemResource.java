@@ -31,6 +31,7 @@ import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.module.webservices.rest.web.annotation.PropertyGetter;
 import org.openmrs.module.webservices.rest.web.annotation.PropertySetter;
 import org.openmrs.module.webservices.rest.web.annotation.Resource;
+import org.openmrs.module.webservices.rest.web.representation.CustomRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.DefaultRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.FullRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.Representation;
@@ -52,7 +53,7 @@ public class BillLineItemResource extends BaseRestDataResource<BillLineItem> {
         DelegatingResourceDescription description = super.getRepresentationDescription(rep);
         if (rep instanceof DefaultRepresentation || rep instanceof FullRepresentation) {
             description.addProperty("item");
-            description.addProperty("billableService", Representation.REF);
+            description.addProperty("billableService", new CustomRepresentation("(uuid,name,provider:ref,location:ref)"));
             description.addProperty("quantity");
             description.addProperty("price");
             description.addProperty("priceName");
@@ -91,13 +92,8 @@ public class BillLineItemResource extends BaseRestDataResource<BillLineItem> {
     }
 
     @PropertyGetter(value = "billableService")
-    public String getBillableService(BillLineItem instance) {
-        try {
-            BillableService service = instance.getBillableService();
-            return service.getName();
-        } catch (Exception e) {
-            return "";
-        }
+    public BillableService getBillableService(BillLineItem instance) {
+        return instance.getBillableService();
     }
 
 
