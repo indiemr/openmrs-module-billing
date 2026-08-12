@@ -59,6 +59,7 @@ import org.openmrs.module.webservices.rest.web.representation.Representation;
 import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
 import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
+import org.openmrs.module.webservices.rest.web.response.InvalidSearchException;
 import org.springframework.web.client.RestClientException;
 
 /**
@@ -213,6 +214,7 @@ public class BillResource extends BaseRestDataResource<Bill> {
 
         // Parse date range
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setLenient(false);
         Date fromDate = null;
         Date toDate = null;
         try {
@@ -223,7 +225,7 @@ public class BillResource extends BaseRestDataResource<Bill> {
                 toDate = dateFormat.parse(toDateStr);
             }
         } catch (ParseException e) {
-            throw new RestClientException("Invalid date format. Expected yyyy-MM-dd");
+            throw new InvalidSearchException("Invalid date format. Expected yyyy-MM-dd");
         }
 
         // Resolve location
