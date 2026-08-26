@@ -55,6 +55,12 @@ import org.openmrs.module.webservices.rest.web.representation.Representation;
 import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
 import org.springframework.web.client.RestClientException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import org.openmrs.Location;
+import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
+import org.openmrs.module.webservices.rest.web.response.InvalidSearchException;
 
 /**
  * REST resource representing a {@link Bill}.
@@ -81,7 +87,7 @@ public class BillResource extends BaseRestDataResource<Bill> {
             description.addProperty("id");
             return description;
         }
-        return null;
+        return description;
     }
 
     @Override
@@ -172,12 +178,22 @@ public class BillResource extends BaseRestDataResource<Bill> {
     }
 
     @Override
+    protected PageableResult doGetAll(RequestContext context) {
+        return doSearch(context);
+    }
+
+    @Override
     protected AlreadyPaged<Bill> doSearch(RequestContext context) {
         String patientUuid = context.getRequest().getParameter("patientUuid");
         String status = context.getRequest().getParameter("status");
         String cashPointUuid = context.getRequest().getParameter("cashPointUuid");
         String includeVoidedLineItemsParam = context.getRequest().getParameter("includeAll");
         String patientName = context.getRequest().getParameter("patientName");
+        String fromDateStr = context.getRequest().getParameter("fromDate");
+        String toDateStr = context.getRequest().getParameter("toDate");
+        String locationUuid = context.getRequest().getParameter("locationUuid");
+        String cashierUuid = context.getRequest().getParameter("cashierUuid");
+        String providerUuid = context.getRequest().getParameter("providerUuid");
 
         Patient patient = StringUtils.isNotBlank(patientUuid) ? Context.getPatientService().getPatientByUuid(patientUuid) : null;
         BillStatus billStatus = null;
@@ -196,11 +212,68 @@ public class BillResource extends BaseRestDataResource<Bill> {
             }
         }
         CashPoint cashPoint = StringUtils.isNotBlank(cashPointUuid) ? Context.getService(ICashPointService.class).getByUuid(cashPointUuid) : null;
+        // Parse date range
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setLenient(false);
+        Date fromDate = null;
+        Date toDate = null;
+        try {
+            if (StringUtils.isNotBlank(fromDateStr)) {
+                fromDate = dateFormat.parse(fromDateStr);
+            }
+            if (StringUtils.isNotBlank(toDateStr)) {
+                toDate = dateFormat.parse(toDateStr);
+            }
+        } catch (ParseException e) {
+            throw new InvalidSearchException("Invalid date format. Expected yyyy-MM-dd");
+        }
+
+        // Resolve location
+        List<Location> locations = new ArrayList<>();
+        if (StringUtils.isNotBlank(locationUuid)) {
+            for (String uuid : locationUuid.split(",")) {
+                String trimmed = uuid.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                Location loc = Context.getLocationService().getLocationByUuid(trimmed);
+                if (loc != null) {
+                    locations.add(loc);
+                }
+            }
+        }
+
+        // Resolve cashier (Provider)
+        Provider cashier = StringUtils.isNotBlank(cashierUuid)
+                ? Context.getProviderService().getProviderByUuid(cashierUuid) : null;
+
+        Provider provider = StringUtils.isNotBlank(providerUuid) 
+                ? Context.getProviderService().getProviderByUuid(providerUuid) : null;
+
+        if ((StringUtils.isNotBlank(patientUuid) && patient == null)
+            || (StringUtils.isNotBlank(cashPointUuid) && cashPoint == null)
+            || (StringUtils.isNotBlank(locationUuid) && locations.isEmpty())
+            || (StringUtils.isNotBlank(cashierUuid) && cashier == null)
+            || (StringUtils.isNotBlank(providerUuid) && provider == null)) {
+            return new AlreadyPaged<>(context, new ArrayList<>(), false, 0L);
+        }
+
+        // If a UUID filter was provided but didn't resolve, return empty results
+        // (the caller explicitly filtered by something that doesn't exist)
+        if ((StringUtils.isNotBlank(patientUuid) && patient == null)
+                || (StringUtils.isNotBlank(cashPointUuid) && cashPoint == null)
+                || (StringUtils.isNotBlank(locationUuid) && locations.isEmpty())
+                || (StringUtils.isNotBlank(cashierUuid) && cashier == null)) {
+            return new AlreadyPaged<>(context, new ArrayList<>(), false, 0L);
+        }
 
         Bill searchTemplate = new Bill();
         searchTemplate.setPatient(patient);
         searchTemplate.setStatus(billStatus);
         searchTemplate.setCashPoint(cashPoint);
+        if (cashier != null) {
+            searchTemplate.setCashier(cashier);
+        }
         IBillService service = Context.getService(IBillService.class);
 
         BillSearch billSearch = new BillSearch(searchTemplate, false);
@@ -213,6 +286,24 @@ public class BillResource extends BaseRestDataResource<Bill> {
         if (statusList != null && !statusList.isEmpty()) {
             billSearch.setStatuses(statusList);
         }
+
+        // Set date range filters
+        if (fromDate != null) {
+            billSearch.setFromDate(fromDate);
+        }
+        if (toDate != null) {
+            billSearch.setToDate(toDate);
+        }
+
+        // Set location filter
+        if (!locations.isEmpty()) {
+            billSearch.setLocations(locations);
+        }
+
+        if (provider != null) {
+            billSearch.setProvider(provider);
+        }
+
         // Default to false (exclude voided line items) unless explicitly set to true
         boolean includeVoidedLineItems = false;
         if (StringUtils.isNotBlank(includeVoidedLineItemsParam)) {
