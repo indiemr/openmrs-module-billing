@@ -32,6 +32,7 @@ import org.openmrs.module.webservices.rest.web.representation.DefaultRepresentat
 import org.openmrs.module.webservices.rest.web.representation.FullRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.RefRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.Representation;
+import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
 import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.resource.impl.DataDelegatingCrudResource;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
@@ -180,7 +181,7 @@ public abstract class BaseRestDataResource<E extends OpenmrsData> extends DataDe
     }
 
     @Override
-    protected NeedsPaging<E> doGetAll(RequestContext context) {
+    protected PageableResult doGetAll(RequestContext context) {
         return new NeedsPaging<E>(getService().getAll(), context);
     }
 

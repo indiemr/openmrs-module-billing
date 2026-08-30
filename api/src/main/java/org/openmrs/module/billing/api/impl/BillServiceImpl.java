@@ -136,10 +136,10 @@ public class BillServiceImpl extends BaseEntityDataServiceImpl<Bill> implements 
 		}
 		
 		// If bill has an ID or UUID, this is an UPDATE (e.g., POST /bill/{uuid})
-        // If forceNewBill is true, always create a new bill
+		// If forceNewBill is true, always create a new bill
 		boolean isUpdate = bill.getId() != null || StringUtils.isNotBlank(bill.getUuid());
 		boolean forceNew = Boolean.TRUE.equals(bill.getForceNewBill());
-
+		
 		if (!isUpdate && !forceNew) {
 			// Check if there is an existing pending bill for the patient
 			List<Bill> bills = searchBill(bill.getPatient());
@@ -173,7 +173,7 @@ public class BillServiceImpl extends BaseEntityDataServiceImpl<Bill> implements 
 				return super.save(billToUpdate);
 			}
 		}
-        // For updates or forceNewBill, skip merging and save as-is
+		// For updates or forceNewBill, skip merging and save as-is
 		return super.save(bill);
 	}
 	

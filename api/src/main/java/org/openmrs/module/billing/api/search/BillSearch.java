@@ -14,15 +14,22 @@
 package org.openmrs.module.billing.api.search;
 
 import java.util.List;
-
+import java.util.Calendar;
+import java.util.Date;
 import org.hibernate.Criteria;
+import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.criterion.Subqueries;
+import org.openmrs.Location;
 import org.openmrs.Patient;
+import org.openmrs.Provider;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.hibernate.HibernatePatientDAO;
 import org.openmrs.module.billing.api.base.entity.search.BaseDataTemplateSearch;
 import org.openmrs.module.billing.api.model.Bill;
+import org.openmrs.module.billing.api.model.BillLineItem;
 import org.openmrs.module.billing.api.model.BillStatus;
 
 /**
@@ -35,6 +42,14 @@ public class BillSearch extends BaseDataTemplateSearch<Bill> {
 	private List<BillStatus> statuses;
 	
 	private String patientName;
+	
+	private Date fromDate;
+	
+	private Date toDate;
+	
+	private List<Location> locations;
+	
+	private Provider provider;
 	
 	public BillSearch() {
 		this(new Bill(), false);
@@ -108,6 +123,34 @@ public class BillSearch extends BaseDataTemplateSearch<Bill> {
 		} else if (bill.getStatus() != null) {
 			criteria.add(Restrictions.eq("status", bill.getStatus()));
 		}
+		if (fromDate != null) {
+			criteria.add(Restrictions.ge("dateCreated", fromDate));
+		}
+		if (toDate != null) {
+			// Set to end of day (23:59:59.999) for inclusive date range
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(toDate);
+			cal.set(Calendar.HOUR_OF_DAY, 23);
+			cal.set(Calendar.MINUTE, 59);
+			cal.set(Calendar.SECOND, 59);
+			cal.set(Calendar.MILLISECOND, 999);
+			criteria.add(Restrictions.le("dateCreated", cal.getTime()));
+		}
+		if (locations != null && !locations.isEmpty()) {
+			criteria.createAlias("cashPoint", "cp");
+			criteria.add(Restrictions.in("cp.location", locations));
+		}
+		if (provider != null) {
+			DetachedCriteria matchingLineItems = DetachedCriteria.forClass(BillLineItem.class, "li");
+			matchingLineItems.createAlias("li.billableService", "bs");
+			matchingLineItems.add(Restrictions.eq("bs.provider", provider));
+			if (includeVoidedLineItems == null || !includeVoidedLineItems) {
+				matchingLineItems.add(Restrictions.eq("li.voided", false));
+			}
+			matchingLineItems.add(Restrictions.eqProperty("li.bill.id", "this.id"));
+			matchingLineItems.setProjection(Projections.id());
+			criteria.add(Subqueries.exists(matchingLineItems));
+		}
 		criteria.addOrder(Order.desc("id"));
 	}
 	
@@ -117,5 +160,37 @@ public class BillSearch extends BaseDataTemplateSearch<Bill> {
 	
 	public void setPatientName(String patientName) {
 		this.patientName = patientName;
+	}
+	
+	public Date getFromDate() {
+		return fromDate;
+	}
+	
+	public void setFromDate(Date fromDate) {
+		this.fromDate = fromDate;
+	}
+	
+	public Date getToDate() {
+		return toDate;
+	}
+	
+	public void setToDate(Date toDate) {
+		this.toDate = toDate;
+	}
+	
+	public List<Location> getLocations() {
+		return locations;
+	}
+	
+	public void setLocations(List<Location> locations) {
+		this.locations = locations;
+	}
+	
+	public Provider getProvider() {
+		return provider;
+	}
+	
+	public void setProvider(Provider provider) {
+		this.provider = provider;
 	}
 }
